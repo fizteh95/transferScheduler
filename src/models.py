@@ -4,7 +4,7 @@ from playhouse.postgres_ext import JSONField
 
 # Nothing special, just define model and database:
 
-database = peewee_async.PostgresqlDatabase('postgres',
+database = peewee_async.PostgresqlDatabase('test',
                                            user='postgres',
                                            password='postgres',
                                            host='localhost',
@@ -16,19 +16,10 @@ class BaseModel(peewee.Model):
         database = database
 
 
-class TestModel(BaseModel):
-    text = peewee.CharField(max_length=400, default='')
-    data = peewee.IntegerField(default=20000)
-
-
 class User(BaseModel):
     vk_login = peewee.CharField()
     password = peewee.CharField()
     tg_id = peewee.IntegerField()
-
-
-class Bot(BaseModel):
-    token = peewee.CharField()
 
 
 class Vk(BaseModel):
@@ -36,19 +27,20 @@ class Vk(BaseModel):
     last_seen = peewee.DateTimeField()
 
 
+class Bot(BaseModel):
+    token = peewee.CharField()
+    user = peewee.ForeignKeyField(User, backref='bots', null=True)
+    vk = peewee.ForeignKeyField(Vk, backref='bots', null=True)
+
+
 class Tg(BaseModel):
     channel = peewee.CharField()
     last_sending = peewee.DateTimeField()
+    bot = peewee.ForeignKeyField(Bot, backref='tg_channels', null=True)
 
 
 class Post(BaseModel):
-    vk_group = peewee.ForeignKeyField(Vk, backref='vk')
     post_id = peewee.IntegerField()
     raw_post = JSONField(default={})
     post_time = peewee.DateTimeField()
-
-
-class UserBot(BaseModel):
-    user = ForeignKeyField(User, backref='user')
-    bot = ForeignKeyField(Bot, backref='favorites')
-
+    vk_group = peewee.ForeignKeyField(Vk, backref='posts')
