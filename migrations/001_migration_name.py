@@ -39,9 +39,9 @@ def migrate(migrator, database, fake=False, **kwargs):
     @migrator.create_model
     class User(pw.Model):
         id = pw.AutoField()
-        vk_login = pw.CharField(max_length=255)
+        vk_login = pw.CharField(max_length=255, unique=True)
         password = pw.CharField(max_length=255)
-        tg_id = pw.IntegerField()
+        tg_user_id = pw.IntegerField(unique=True)
 
         class Meta:
             table_name = "user"
@@ -49,7 +49,7 @@ def migrate(migrator, database, fake=False, **kwargs):
     @migrator.create_model
     class Bot(pw.Model):
         id = pw.AutoField()
-        token = pw.CharField(max_length=255)
+        token = pw.CharField(max_length=255, unique=True)
         user = pw.ForeignKeyField(backref='bots', column_name='user_id', field='id', model=migrator.orm['user'], null=True)
 
         class Meta:
@@ -58,40 +58,52 @@ def migrate(migrator, database, fake=False, **kwargs):
     @migrator.create_model
     class Vk(pw.Model):
         id = pw.AutoField()
-        link = pw.CharField(max_length=255)
+        link = pw.CharField(max_length=255, unique=True)
         last_seen = pw.DateTimeField()
 
         class Meta:
             table_name = "vk"
 
     @migrator.create_model
-    class Post(pw.Model):
-        id = pw.AutoField()
-        vk_group = pw.ForeignKeyField(backref='vk', column_name='vk_group_id', field='id', model=migrator.orm['vk'])
-        post_id = pw.IntegerField()
-        raw_post = pw_pext.JSONField(constraints=[SQL("DEFAULT '{}'")], default={})
-        post_time = pw.DateTimeField()
-
-        class Meta:
-            table_name = "post"
-
-    @migrator.create_model
     class Tg(pw.Model):
         id = pw.AutoField()
-        channel = pw.CharField(max_length=255)
+        channel = pw.CharField(max_length=255, unique=True)
         last_sending = pw.DateTimeField()
 
         class Meta:
             table_name = "tg"
+
+    @migrator.create_model
+    class Association(pw.Model):
+        id = pw.AutoField()
+        bot = pw.ForeignKeyField(backref='assoc', column_name='bot_id', field='id', model=migrator.orm['bot'])
+        vk = pw.ForeignKeyField(backref='assoc', column_name='vk_id', field='id', model=migrator.orm['vk'])
+        tg = pw.ForeignKeyField(backref='assoc', column_name='tg_id', field='id', model=migrator.orm['tg'])
+
+        class Meta:
+            table_name = "association"
+
+    @migrator.create_model
+    class Post(pw.Model):
+        id = pw.AutoField()
+        post_id = pw.IntegerField(unique=True)
+        raw_post = pw_pext.JSONField(constraints=[SQL("DEFAULT '{}'")], default={})
+        post_time = pw.DateTimeField()
+        vk_group = pw.ForeignKeyField(backref='posts', column_name='vk_group_id', field='id', model=migrator.orm['vk'])
+
+        class Meta:
+            table_name = "post"
 
 
 
 def rollback(migrator, database, fake=False, **kwargs):
     """Write your rollback migrations here."""
 
-    migrator.remove_model('tg')
-
     migrator.remove_model('post')
+
+    migrator.remove_model('association')
+
+    migrator.remove_model('tg')
 
     migrator.remove_model('vk')
 
