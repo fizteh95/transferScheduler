@@ -4,7 +4,7 @@ from playhouse.postgres_ext import JSONField
 
 # Nothing special, just define model and database:
 
-database = peewee_async.PostgresqlDatabase('test',
+database = peewee_async.PostgresqlDatabase('postgres',
                                            user='postgres',
                                            password='postgres',
                                            host='localhost',
@@ -17,30 +17,34 @@ class BaseModel(peewee.Model):
 
 
 class User(BaseModel):
-    vk_login = peewee.CharField()
+    vk_login = peewee.CharField(unique=True)
     password = peewee.CharField()
-    tg_id = peewee.IntegerField()
-
-
-class Vk(BaseModel):
-    link = peewee.CharField()
-    last_seen = peewee.DateTimeField()
+    tg_user_id = peewee.IntegerField(unique=True)
 
 
 class Bot(BaseModel):
-    token = peewee.CharField()
+    token = peewee.CharField(unique=True)
     user = peewee.ForeignKeyField(User, backref='bots', null=True)
-    vk = peewee.ForeignKeyField(Vk, backref='bots', null=True)
+
+
+class Vk(BaseModel):
+    link = peewee.CharField(unique=True)
+    last_seen = peewee.DateTimeField()
 
 
 class Tg(BaseModel):
-    channel = peewee.CharField()
+    channel = peewee.CharField(unique=True)
     last_sending = peewee.DateTimeField()
-    bot = peewee.ForeignKeyField(Bot, backref='tg_channels', null=True)
+
+
+class Association(BaseModel):
+    bot = peewee.ForeignKeyField(Bot, backref='assoc')
+    vk = peewee.ForeignKeyField(Vk, backref='assoc')
+    tg = peewee.ForeignKeyField(Tg, backref='assoc')
 
 
 class Post(BaseModel):
-    post_id = peewee.IntegerField()
+    post_id = peewee.IntegerField(unique=True)
     raw_post = JSONField(default={})
     post_time = peewee.DateTimeField()
     vk_group = peewee.ForeignKeyField(Vk, backref='posts')
