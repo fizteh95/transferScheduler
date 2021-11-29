@@ -41,6 +41,7 @@ class Association(BaseModel):
     bot = peewee.ForeignKeyField(Bot, backref='assoc')
     vk = peewee.ForeignKeyField(Vk, backref='assoc')
     tg = peewee.ForeignKeyField(Tg, backref='assoc')
+    last_post_time = peewee.DateTimeField()
 
 
 class Post(BaseModel):

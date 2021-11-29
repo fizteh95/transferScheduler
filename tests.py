@@ -3,7 +3,8 @@ import DAO
 import DTO
 import datetime
 from DAO import objects
-from src.models import User, Bot, Vk, Tg, Association
+from src.models import User, Bot, Vk, Tg, Association, Post
+from time import sleep
 
 
 @pytest.mark.asyncio
@@ -17,6 +18,7 @@ async def db():
     # Delete DB here when the test ends
     await objects.execute(Association.delete())
 
+    await objects.execute(Post.delete())
     await objects.execute(Bot.delete().where(Bot.token == 'test2'))
     await objects.execute(Bot.delete().where(Bot.token == 'test1'))
     await objects.execute(Vk.delete().where(Vk.link == 'vk.com/test2'))
@@ -84,10 +86,6 @@ async def test_create_association():
     created_vk1 = await DAO.create_vk(vk1)
     vk2 = DTO.Vk(link='vk.com/test2', last_seen=datetime.datetime.now())
     created_vk2 = await DAO.create_vk(vk2)
-    # vk3 = DTO.Vk(link='vk.com/test3', last_seen=datetime.datetime.now())
-    # created_vk3 = await DAO.create_vk(vk3)
-    # vk4 = DTO.Vk(link='vk.com/test4', last_seen=datetime.datetime.now())
-    # created_vk4 = await DAO.create_vk(vk4)
 
     tg1 = DTO.Tg(channel='@test1', last_sending=datetime.datetime.now())
     created_tg1 = await DAO.create_tg(tg1)
@@ -112,16 +110,62 @@ async def test_create_association():
     assert {created_bot1.token} == set([x.token for x in bots_to_test2])
 
 
-# @pytest.mark.asyncio
-# async def test_creating_post():
-#     vk = await DAO.get_vk('vk.com/test')
-#     post = DTO.Post(post_id=1, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
-#     created_post = await DAO.create_post(post, vk)
-#     assert created_post.post_id == post.post_id
-#     posts_from_db = await DAO.get_vk_posts(vk)
-#     assert len(posts_from_db) == 1
-#     assert posts_from_db[0] == created_post
-#     # await objects.execute(Post.delete().where(Post.post_id == 1))
+@pytest.mark.asyncio
+async def test_creating_post():
+    vk = await DAO.get_vk('vk.com/test')
+    post1 = DTO.Post(post_id=1, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    created_post1 = await DAO.create_post(post1, vk)
+    sleep(0.1)
+    post2 = DTO.Post(post_id=2, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    created_post2 = await DAO.create_post(post2, vk)
+    sleep(0.1)
+    post3 = DTO.Post(post_id=3, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    created_post3 = await DAO.create_post(post3, vk)
+    assert created_post1.post_id == post1.post_id
+    assert created_post3.post_id == post3.post_id
+    posts_from_db = await DAO.get_vk_posts(vk)
+    assert len(posts_from_db) == 3
+    assert posts_from_db[0] in [created_post1, created_post2, created_post3]
+    assert posts_from_db[1] in [created_post1, created_post2, created_post3]
+    assert posts_from_db[2] in [created_post1, created_post2, created_post3]
+
+
+@pytest.mark.asyncio
+async def test_getting_posts():
+    vk1 = await DAO.get_vk('vk.com/test1')
+    post1 = DTO.Post(post_id=4, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    created_post1 = await DAO.create_post(post1, vk1)
+    sleep(0.1)
+    post2 = DTO.Post(post_id=5, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    created_post2 = await DAO.create_post(post2, vk1)
+    sleep(0.1)
+    post3 = DTO.Post(post_id=6, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    created_post3 = await DAO.create_post(post3, vk1)
+
+    vk2 = await DAO.get_vk('vk.com/test2')
+    post1 = DTO.Post(post_id=7, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    created_post4 = await DAO.create_post(post1, vk2)
+    sleep(0.1)
+    post2 = DTO.Post(post_id=8, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    created_post5 = await DAO.create_post(post2, vk2)
+
+    tg1 = DTO.Tg(channel='@test1')
+    posts_for_tg1 = await DAO.get_new_posts_for_tg(tg1)
+    assert len(posts_for_tg1) == 3
+    assert posts_for_tg1[0] in [created_post1, created_post2, created_post3]
+    assert posts_for_tg1[1] in [created_post1, created_post2, created_post3]
+    assert posts_for_tg1[2] in [created_post1, created_post2, created_post3]
+
+    tg2 = DTO.Tg(channel='@test2')
+    posts_for_tg2 = await DAO.get_new_posts_for_tg(tg2)
+    assert len(posts_for_tg2) == 2
+    assert posts_for_tg2[0] in [created_post4, created_post5]
+    assert posts_for_tg2[1] in [created_post4, created_post5]
+
+
+@pytest.mark.asyncio
+async def test_getting_posts_new_time():
+    assert 1 == 1
 
 
 @pytest.mark.asyncio

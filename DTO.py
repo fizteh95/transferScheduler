@@ -25,7 +25,7 @@ class Vk(BaseModel):
 
 class Tg(BaseModel):
     channel: str
-    last_sending: datetime
+    last_sending: Optional[datetime]
     assocs: Optional[List]
 
 
@@ -33,10 +33,11 @@ class Association(BaseModel):
     bot: Bot
     vk: Vk
     tg: Tg
+    last_post_time: datetime
 
 
 class Post(BaseModel):
     post_id: int
-    raw_post: Json
+    raw_post: dict
     post_time: datetime
     vk_group: Optional[Vk]

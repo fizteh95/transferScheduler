@@ -65,7 +65,7 @@ async def create_association(bot: DTO.Bot, vk: DTO.Vk, tg: DTO.Tg) -> DTO.Associ
     db_bot = await objects.get(Bot, token=bot.token)
     db_vk = await objects.get(Vk, link=vk.link)
     db_tg = await objects.get(Tg, channel=tg.channel)
-    association = await objects.create(Association, bot=db_bot, vk=db_vk, tg=db_tg)
+    association = await objects.create(Association, bot=db_bot, vk=db_vk, tg=db_tg, last_post_time=datetime(2000, 1, 1))
     return DTO.Association.parse_obj(model_to_dict(association))
 
 
@@ -89,7 +89,9 @@ async def get_tgs_by_bot(bot: DTO.Bot) -> tp.List[DTO.Tg]:
 
 async def create_post(post: DTO.Post, vk: DTO.Vk) -> DTO.Post:
     db_vk = await objects.get(Vk, link=vk.link)
-    created_post = await objects.create(Post, **post.dict(), vk_group=db_vk)
+    vk_dict = post.dict()
+    del vk_dict['vk_group']
+    created_post = await objects.create(Post, **vk_dict, vk_group=db_vk)
     return DTO.Post.parse_obj(model_to_dict(created_post))
 
 
@@ -101,10 +103,20 @@ async def get_vk_posts(vk: DTO.Vk) -> tp.List[DTO.Post]:
 
 async def get_new_posts_for_tg(tg: DTO.Tg) -> tp.List[DTO.Post]:
     db_tg = await objects.get(Tg, channel=tg.channel)
-    vks = {}
+    times = {}
+    res = []
     associations = db_tg.assoc
     for ass in associations:
-        vks[ass.vk.link] = ass.vk
-    vks = list(vks.values())
-    posts = await objects.execute(Post.select().where(Post.post_time > less_time))
+        times[ass.vk.id] = ass.last_post_time
+    for j, link in zip(times.values(), times.keys()):
+        res += list(await objects.execute(Post.select().where(Post.vk_group == link, Post.post_time > j)))
+    return [DTO.Post.parse_obj(model_to_dict(post)) for post in res]
 
+
+async def change_last_post_time_in_assoc(bot: DTO.Bot, vk: DTO.Vk, tg: DTO.Tg, last_post_time: datetime) -> None:
+    db_bot = await objects.get(Bot, token=bot.token)
+    db_vk = await objects.get(Vk, link=vk.link)
+    db_tg = await objects.get(Tg, channel=tg.channel)
+    db_assoc = await objects.get(Association, bot=db_bot, vk=db_vk, tg=db_tg)
+    db_assoc.last_post_time = last_post_time
+    await objects.update(db_assoc)
