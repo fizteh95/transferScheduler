@@ -164,7 +164,7 @@ async def test_getting_posts():
 
 
 @pytest.mark.asyncio
-async def test_getting_posts_new_time():
+async def test_getting_posts_check_timing():
     assert 1 == 1
 
 
