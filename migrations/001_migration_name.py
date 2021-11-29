@@ -79,6 +79,7 @@ def migrate(migrator, database, fake=False, **kwargs):
         bot = pw.ForeignKeyField(backref='assoc', column_name='bot_id', field='id', model=migrator.orm['bot'])
         vk = pw.ForeignKeyField(backref='assoc', column_name='vk_id', field='id', model=migrator.orm['vk'])
         tg = pw.ForeignKeyField(backref='assoc', column_name='tg_id', field='id', model=migrator.orm['tg'])
+        last_post_time = pw.DateTimeField()
 
         class Meta:
             table_name = "association"
