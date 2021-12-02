@@ -1,8 +1,9 @@
 from peewee_migrate import Router
+
 from src.models import database
 
 
-router = Router(database, ignore=["basemodel"])
+router = Router(database, ignore=['basemodel'])
 
 # Create migration
 router.create('migration_name', auto='src.models')

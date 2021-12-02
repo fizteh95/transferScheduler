@@ -20,10 +20,10 @@ Some examples (model - class or model name)::
     > migrator.add_default(model, field_name, default)
 
 """
-
 import datetime as dt
-import peewee as pw
 from decimal import ROUND_HALF_EVEN
+
+import peewee as pw
 
 try:
     import playhouse.postgres_ext as pw_pext
@@ -44,7 +44,7 @@ def migrate(migrator, database, fake=False, **kwargs):
         tg_user_id = pw.IntegerField(unique=True)
 
         class Meta:
-            table_name = "user"
+            table_name = 'user'
 
     @migrator.create_model
     class Bot(pw.Model):
@@ -53,7 +53,7 @@ def migrate(migrator, database, fake=False, **kwargs):
         user = pw.ForeignKeyField(backref='bots', column_name='user_id', field='id', model=migrator.orm['user'], null=True)
 
         class Meta:
-            table_name = "bot"
+            table_name = 'bot'
 
     @migrator.create_model
     class Vk(pw.Model):
@@ -62,7 +62,7 @@ def migrate(migrator, database, fake=False, **kwargs):
         last_seen = pw.DateTimeField()
 
         class Meta:
-            table_name = "vk"
+            table_name = 'vk'
 
     @migrator.create_model
     class Tg(pw.Model):
@@ -71,7 +71,7 @@ def migrate(migrator, database, fake=False, **kwargs):
         last_sending = pw.DateTimeField()
 
         class Meta:
-            table_name = "tg"
+            table_name = 'tg'
 
     @migrator.create_model
     class Association(pw.Model):
@@ -82,7 +82,7 @@ def migrate(migrator, database, fake=False, **kwargs):
         last_post_time = pw.DateTimeField()
 
         class Meta:
-            table_name = "association"
+            table_name = 'association'
 
     @migrator.create_model
     class Post(pw.Model):
@@ -93,7 +93,7 @@ def migrate(migrator, database, fake=False, **kwargs):
         vk_group = pw.ForeignKeyField(backref='posts', column_name='vk_group_id', field='id', model=migrator.orm['vk'])
 
         class Meta:
-            table_name = "post"
+            table_name = 'post'
 
 
 

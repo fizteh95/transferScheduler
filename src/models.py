@@ -4,11 +4,13 @@ from playhouse.postgres_ext import JSONField
 
 # Nothing special, just define model and database:
 
-database = peewee_async.PostgresqlDatabase('postgres',
-                                           user='postgres',
-                                           password='postgres',
-                                           host='localhost',
-                                           port='5432')
+database = peewee_async.PostgresqlDatabase(
+    'postgres',
+    user='postgres',
+    password='postgres',
+    host='localhost',
+    port='5432',
+)
 
 
 class BaseModel(peewee.Model):

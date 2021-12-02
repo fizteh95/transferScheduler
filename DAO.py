@@ -1,9 +1,17 @@
-from src.models import database, User, Vk, Tg, Bot, Post, Association
-import DTO
-import peewee_async
-from playhouse.shortcuts import model_to_dict
 import typing as tp
 from datetime import datetime
+
+import peewee_async
+from playhouse.shortcuts import model_to_dict
+
+import DTO
+from src.models import Association
+from src.models import Bot
+from src.models import database
+from src.models import Post
+from src.models import Tg
+from src.models import User
+from src.models import Vk
 
 
 objects = peewee_async.Manager(database)

@@ -1,10 +1,17 @@
 import asyncio
+
 import peewee
 import peewee_async
 
 # Nothing special, just define model and database:
 
-database = peewee_async.PostgresqlDatabase('postgres', user='postgres', password='postgres', host='localhost', port='5432')
+database = peewee_async.PostgresqlDatabase(
+    'postgres',
+    user='postgres',
+    password='postgres',
+    host='localhost',
+    port='5432',
+)
 
 
 class TestModel(peewee.Model):
@@ -17,7 +24,7 @@ class TestModel(peewee.Model):
 
 
 TestModel.create_table(True)
-TestModel.create(text="Yo, I can do it sync!")
+TestModel.create(text='Yo, I can do it sync!')
 database.close()
 
 # Create async models manager:

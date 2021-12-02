@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Json
 from datetime import datetime
-from typing import Optional, List
+from typing import List
+from typing import Optional
+
+from pydantic import BaseModel
 
 
 class User(BaseModel):

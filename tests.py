@@ -1,10 +1,17 @@
+import datetime
+from time import sleep
+
 import pytest
+
 import DAO
 import DTO
-import datetime
 from DAO import objects
-from src.models import User, Bot, Vk, Tg, Association, Post
-from time import sleep
+from src.models import Association
+from src.models import Bot
+from src.models import Post
+from src.models import Tg
+from src.models import User
+from src.models import Vk
 
 
 @pytest.mark.asyncio
@@ -133,13 +140,11 @@ async def test_creating_post():
 @pytest.mark.asyncio
 async def test_getting_posts():
     vk1 = await DAO.get_vk('vk.com/test1')
-    post1 = DTO.Post(post_id=4, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    post1 = DTO.Post(post_id=4, raw_post={'a': 'b'}, post_time=datetime.datetime(2010, 1, 1))
     created_post1 = await DAO.create_post(post1, vk1)
-    sleep(0.1)
-    post2 = DTO.Post(post_id=5, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    post2 = DTO.Post(post_id=5, raw_post={'a': 'b'}, post_time=datetime.datetime(2012, 1, 1))
     created_post2 = await DAO.create_post(post2, vk1)
-    sleep(0.1)
-    post3 = DTO.Post(post_id=6, raw_post={'a': 'b'}, post_time=datetime.datetime.now())
+    post3 = DTO.Post(post_id=6, raw_post={'a': 'b'}, post_time=datetime.datetime(2013, 1, 1))
     created_post3 = await DAO.create_post(post3, vk1)
 
     vk2 = await DAO.get_vk('vk.com/test2')
@@ -165,7 +170,22 @@ async def test_getting_posts():
 
 @pytest.mark.asyncio
 async def test_getting_posts_check_timing():
-    assert 1 == 1
+    db_bot = DTO.Bot(token='test1')
+    db_tg1 = DTO.Tg(channel='@test1')
+    db_vk = await DAO.get_vk(vk_link='vk.com/test1')
+    await DAO.change_last_post_time_in_assoc(db_bot, db_vk, db_tg1, datetime.datetime(2011, 1, 1))
+
+    posts_for_tg1 = await DAO.get_new_posts_for_tg(db_tg1)
+    assert len(posts_for_tg1) == 2
+    assert posts_for_tg1[0].post_id in [5, 6]
+    assert posts_for_tg1[1].post_id in [5, 6]
+
+    db_tg2 = DTO.Tg(channel='@test3')
+    posts_for_tg2 = await DAO.get_new_posts_for_tg(db_tg2)
+    assert len(posts_for_tg2) == 3
+    assert posts_for_tg2[0].post_id in [4, 5, 6]
+    assert posts_for_tg2[1].post_id in [4, 5, 6]
+    assert posts_for_tg2[2].post_id in [4, 5, 6]
 
 
 @pytest.mark.asyncio
