@@ -51,6 +51,11 @@ async def get_tg(channel: str) -> DTO.Tg:
     return DTO.Tg.parse_obj(model_to_dict(tg_channel))
 
 
+async def get_all_tg() -> tp.List[DTO.Tg]:
+    tg_channels = await objects.execute(Tg.select())
+    return [DTO.Tg.parse_obj(model_to_dict(tg)) for tg in tg_channels]
+
+
 async def get_vk_by_last_seen(less_time: datetime) -> tp.List[DTO.Vk]:
     vk_groups = await objects.execute(Vk.select().where(Vk.last_seen < less_time))
     return [DTO.Vk.parse_obj(model_to_dict(vk)) for vk in vk_groups]
