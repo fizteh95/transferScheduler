@@ -24,23 +24,24 @@ class Scheduler:
             settings.RABBIT_ADDRESS,  # , loop=loop
         )
         self.channel = await self.connection.channel()  # noQA
-        self.queue_name = settings.RABBIT_READING_QUEUE  # noQA
+        self.queue_reading_name = settings.RABBIT_READING_QUEUE  # noQA
+        self.queue_sending_name = settings.RABBIT_SENDING_QUEUE  # noQA
 
-    async def bus_send(self, message: dict) -> None:
+    async def bus_send(self, message: dict, queue: str) -> None:
         await self.channel.default_exchange.publish(
             Message(
                 body=json.dumps(message).encode(),
                 content_type='text/plain',
                 correlation_id=str(uuid.uuid1()),
             ),
-            routing_key=self.queue_name,
+            routing_key=queue,
         )
 
     async def sending_reading_vk_task(self) -> None:
         updated_time = datetime.datetime.now() - datetime.timedelta(seconds=settings.VK_CHECK_INTERVAL)
         vks = await DAO.get_vk_by_last_seen(updated_time)
         message = {'vks': [vk.link for vk in vks]}
-        await self.bus_send(message)
+        await self.bus_send(message, self.queue_reading_name)
 
     async def sending_unprocessed_messages_task(self):
         # TODO: сделать как при заборе из вк, сначала смотрим каналы которые давно не обновлялись
@@ -49,7 +50,7 @@ class Scheduler:
         for tg in all_tgs:
             new_messages = DAO.get_new_posts_for_tg(tg)
             message[tg.channel] = new_messages
-        await self.bus_send(message)
+        await self.bus_send(message, self.queue_sending_name)
 
     async def run_vk_scheduler(self):
         while True:

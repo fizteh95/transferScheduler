@@ -20,6 +20,7 @@ class BaseModel(peewee.Model):
 
 class User(BaseModel):
     vk_login = peewee.CharField(unique=True)
+    token = peewee.CharField(unique=True)
     password = peewee.CharField()
     tg_user_id = peewee.IntegerField(unique=True)
 
