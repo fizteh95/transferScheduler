@@ -173,7 +173,7 @@ async def test_getting_posts_check_timing():
     db_bot = DTO.Bot(token='test1')
     db_tg1 = DTO.Tg(channel='@test1')
     db_vk = await DAO.get_vk(vk_link='vk.com/test1')
-    await DAO.change_last_post_time_in_assoc(db_bot, db_vk, db_tg1, datetime.datetime(2011, 1, 1))
+    await DAO.change_last_post_time_in_assoc(db_bot, db_vk, db_tg1, int(datetime.datetime(2011, 1, 1).timestamp()))
 
     posts_for_tg1 = await DAO.get_new_posts_for_tg(db_tg1)
     assert len(posts_for_tg1) == 2

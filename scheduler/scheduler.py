@@ -8,6 +8,7 @@ from aio_pika import Message
 from fastapi import FastAPI  # BackgroundTasks
 
 import DAO
+import DTO
 import settings
 
 
@@ -22,6 +23,7 @@ class Scheduler:
     async def rabbit_connect(self):
         self.connection = await aio_pika.connect_robust(  # noQA
             settings.RABBIT_ADDRESS,  # , loop=loop
+            port=5673,
         )
         self.channel = await self.connection.channel()  # noQA
         self.queue_reading_name = settings.RABBIT_READING_QUEUE  # noQA
@@ -57,14 +59,14 @@ class Scheduler:
             self.vk_value += 1
             await asyncio.sleep(settings.VK_UPDATE_INTERVAL)
             await self.sending_reading_vk_task()
-            print(self.vk_value)
+            print('vk', self.vk_value)
 
     async def run_tg_scheduler(self):
         while True:
             self.tg_value += 1
             await asyncio.sleep(settings.TG_UPDATE_INTERVAL)
             await self.sending_unprocessed_messages_task()
-            print(self.tg_value)
+            print('tg', self.tg_value)
 
 
 runner = Scheduler()
@@ -77,12 +79,49 @@ async def app_startup():
     asyncio.create_task(runner.run_tg_scheduler())
 
 
-# @app.get("/")
-# async def read_items():
-#     return {'hi': 'its ok!', 'value': runner.value}
-#
-#
-# @app.get("/set_value")
-# def set_value(x: int):
-#     runner.value = x
-#     return f"set runner.value to {x}"
+@app.post('/add_user')
+async def add_user(user: DTO.User):
+    r = await DAO.create_user(user)
+    return r.dict()
+
+
+@app.post('/add_vk')
+async def add_vk(vk: DTO.Vk):
+    r = await DAO.create_vk(vk)
+    return r.dict()
+
+
+@app.post('/delete_all_vk')
+async def delete_all_vk():
+    await DAO.delete_all_vk()
+    return {'deleted': True}
+
+
+@app.post('/add_bot')
+async def add_bot(user_bot: DTO.UserBot):
+    r = await DAO.create_bot_by_user(user_bot.bot, user_bot.user)
+    return r.dict()
+
+
+@app.post('/add_tg')
+async def add_tg(tg: DTO.Tg):
+    r = await DAO.create_tg(tg)
+    return r.dict()
+
+
+@app.post('/add_association')
+async def add_association(ass: DTO.Association):
+    r = await DAO.create_association(bot=ass.bot, tg=ass.tg, vk=ass.vk)
+    return r.dict()
+
+
+@app.post('/delete_all_associations')
+async def delete_all_association():
+    await DAO.delete_all_associations()
+    return {'deleted': True}
+
+
+@app.post('/delete_all_posts')
+async def delete_all_posts():
+    await DAO.delete_all_posts()
+    return {'deleted': True}

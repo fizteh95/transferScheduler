@@ -9,7 +9,7 @@ database = peewee_async.PostgresqlDatabase(
     user='postgres',
     password='postgres',
     host='localhost',
-    port='5432',
+    port='5433',
 )
 
 
@@ -44,11 +44,11 @@ class Association(BaseModel):
     bot = peewee.ForeignKeyField(Bot, backref='assoc')
     vk = peewee.ForeignKeyField(Vk, backref='assoc')
     tg = peewee.ForeignKeyField(Tg, backref='assoc')
-    last_post_time = peewee.DateTimeField()
+    last_post_time = peewee.IntegerField()
 
 
 class Post(BaseModel):
-    post_id = peewee.IntegerField(unique=True)
+    post_id = peewee.BigIntegerField(unique=True)
     raw_post = JSONField(default={})
-    post_time = peewee.DateTimeField()
+    post_time = peewee.IntegerField()
     vk_group = peewee.ForeignKeyField(Vk, backref='posts')
