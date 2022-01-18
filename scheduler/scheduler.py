@@ -21,9 +21,9 @@ class Scheduler:
         self.tg_value = 0
 
     async def rabbit_connect(self):
+        print(settings.RABBIT_ADDRESS)
         self.connection = await aio_pika.connect_robust(  # noQA
-            settings.RABBIT_ADDRESS,  # , loop=loop
-            port=5673,
+            settings.RABBIT_ADDRESS,
         )
         self.channel = await self.connection.channel()  # noQA
         self.queue_reading_name = settings.RABBIT_READING_QUEUE  # noQA
@@ -50,8 +50,19 @@ class Scheduler:
         all_tgs = await DAO.get_all_tg()
         message = {}
         for tg in all_tgs:
-            new_messages = DAO.get_new_posts_for_tg(tg)
-            message[tg.channel] = new_messages
+            new_messages = await DAO.get_new_posts_for_tg(tg)
+            if not new_messages:
+                print('no messages')
+                continue
+            posts = [json.loads(x.json()) for x in new_messages]
+            message[tg.channel] = sorted(posts, key=lambda x: x['post_time'])
+            # print(message)
+
+            dto_bot = await DAO.get_bot_by_tg(tg)
+            dto_vk = DTO.Vk(link=posts[0]['vk_group']['link'])
+
+            print(f'messages number: {len(posts)}')
+            await DAO.change_last_post_time_in_assoc(dto_bot, dto_vk, tg, posts[0]['post_time'])
         await self.bus_send(message, self.queue_sending_name)
 
     async def run_vk_scheduler(self):
@@ -91,6 +102,12 @@ async def add_vk(vk: DTO.Vk):
     return r.dict()
 
 
+@app.get('/all_tg')
+async def all_tg():
+    r = await DAO.get_all_tg()
+    return r
+
+
 @app.post('/delete_all_vk')
 async def delete_all_vk():
     await DAO.delete_all_vk()
@@ -123,5 +140,11 @@ async def delete_all_association():
 
 @app.post('/delete_all_posts')
 async def delete_all_posts():
-    await DAO.delete_all_posts()
+    num = await DAO.delete_all_posts()
+    return {'deleted': num}
+
+
+@app.post('/delete_all_posted')
+async def delete_all_posted():
+    await DAO.delete_all_posted()
     return {'deleted': True}

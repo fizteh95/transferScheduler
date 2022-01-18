@@ -11,6 +11,7 @@ from src.models import Association
 from src.models import Bot
 from src.models import database
 from src.models import Post
+from src.models import PostedPosts
 from src.models import Tg
 from src.models import User
 from src.models import Vk
@@ -93,8 +94,8 @@ async def delete_all_associations() -> None:
     await objects.execute(Association.delete())
 
 
-async def delete_all_posts() -> None:
-    await objects.execute(Post.delete())
+async def delete_all_posts() -> int:
+    return await objects.execute(Post.delete())
 
 
 async def create_bot_by_user(bot: DTO.Bot, user: DTO.User) -> DTO.Bot:
@@ -137,6 +138,23 @@ async def get_tgs_by_bot(bot: DTO.Bot) -> tp.List[DTO.Tg]:
     for ass in associations:
         tgs[ass.tg.channel] = ass.tg
     return [DTO.Tg.parse_obj(model_to_dict(x)) for x in tgs.values()]
+
+
+async def get_bot_by_tg(tg: DTO.Tg) -> DTO.Bot:
+    db_tg = await objects.get(Tg, channel=tg.channel)
+    bots = {}
+    associations = db_tg.assoc
+    for ass in associations:
+        bots[ass.bot.token] = ass.bot
+    bots = list(bots.keys())
+    return DTO.Bot(token=random.choice(bots))
+
+
+async def check_post_exist(post: DTO.Post) -> bool:
+    db_post = await objects.execute(Post.select().where(Post.post_id == post.post_id).limit(1))
+    if db_post:
+        return True
+    return False
 
 
 async def create_post(post: DTO.Post, vk: DTO.Vk) -> DTO.Post:
@@ -182,3 +200,28 @@ async def change_last_post_time_in_assoc(bot: DTO.Bot, vk: DTO.Vk, tg: DTO.Tg, l
     db_assoc = await objects.get(Association, bot=db_bot, vk=db_vk, tg=db_tg)
     db_assoc.last_post_time = last_post_time
     await objects.update(db_assoc)
+
+
+async def is_posted_in_asssoc(post: DTO.Post, vk: DTO.Vk, tg: DTO.Tg, bot: DTO.Bot) -> bool:
+    db_post = await objects.get(Post, post_id=post.post_id)
+    db_bot = await objects.get(Bot, token=bot.token)
+    db_vk = await objects.get(Vk, link=vk.link)
+    db_tg = await objects.get(Tg, channel=tg.channel)
+    db_assoc = await objects.get(Association, bot=db_bot, vk=db_vk, tg=db_tg)
+    posted_in_assocs = db_post.posted  # list
+    if db_assoc.id in [x.association.id for x in posted_in_assocs]:
+        return True
+    return False
+
+
+async def posted_in_assoc(post: DTO.Post, vk: DTO.Vk, tg: DTO.Tg, bot: DTO.Bot) -> None:
+    db_post = await objects.get(Post, post_id=post.post_id)
+    db_bot = await objects.get(Bot, token=bot.token)
+    db_vk = await objects.get(Vk, link=vk.link)
+    db_tg = await objects.get(Tg, channel=tg.channel)
+    db_assoc = await objects.get(Association, bot=db_bot, vk=db_vk, tg=db_tg)
+    await objects.create(PostedPosts, post=db_post, association=db_assoc)
+
+
+async def delete_all_posted():
+    await objects.execute(PostedPosts.delete())

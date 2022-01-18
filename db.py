@@ -9,8 +9,8 @@ database = peewee_async.PostgresqlDatabase(
     'postgres',
     user='postgres',
     password='postgres',
-    host='localhost',
-    port='5433',
+    host='postgres',
+    port='5432',
 )
 
 

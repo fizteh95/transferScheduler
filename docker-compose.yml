@@ -1,0 +1,57 @@
+version: "3.3"
+
+services:
+  postgres:
+    image: postgres:10
+    container_name: postgres
+    hostname: postgres
+    ports:
+        - "5432:5432"
+    environment:
+        POSTGRES_DB: "postgres"
+        POSTGRES_USER: "postgres"
+        POSTGRES_PASSWORD: "postgres"
+        PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - .:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:alpine
+    container_name: rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: "guest"
+      RABBITMQ_DEFAULT_PASS: "guest"
+
+  scheduler:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.scheduler
+    image: fizteh95/scheduler:0.1
+    environment:
+      - PYTHONIOENCODING=utf8
+    ports:
+      - '8000:8000'
+
+  reader:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.reader
+    image: fizteh95/reader:0.1
+    environment:
+      - PYTHONIOENCODING=utf8
+    ports:
+      - '8001:8001'
+
+  sender:
+#    build:
+#      context: .
+#      dockerfile: Dockerfile.sender
+    image: fizteh95/sender:0.1
+    environment:
+      - PYTHONIOENCODING=utf8
+    ports:
+      - '8002:8002'

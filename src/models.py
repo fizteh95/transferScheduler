@@ -8,8 +8,8 @@ database = peewee_async.PostgresqlDatabase(
     'postgres',
     user='postgres',
     password='postgres',
-    host='localhost',
-    port='5433',
+    host='postgres',
+    port='5432',
 )
 
 
@@ -52,3 +52,8 @@ class Post(BaseModel):
     raw_post = JSONField(default={})
     post_time = peewee.IntegerField()
     vk_group = peewee.ForeignKeyField(Vk, backref='posts')
+
+
+class PostedPosts(BaseModel):
+    post = peewee.ForeignKeyField(Post, backref='posted')
+    association = peewee.ForeignKeyField(Association, backref='posted')

@@ -1,0 +1,19 @@
+FROM arm32v6/python:3.9-alpine
+
+WORKDIR /opt
+
+COPY . .
+
+RUN apk update --no-cache \
+&& apk add build-base postgresql-dev libpq --no-cache --virtual .build-deps \
+&& pip install --no-cache-dir --upgrade pip \
+&& pip install --no-cache-dir -r scheduler/requirements.txt \
+&& apk del .build-deps
+
+RUN apk add postgresql-libs libpq --no-cache
+
+RUN ["chmod", "+x", "/opt/scheduler/start.sh"]
+
+EXPOSE 8000
+
+ENTRYPOINT ["scheduler/start.sh"]

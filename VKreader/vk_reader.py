@@ -28,8 +28,7 @@ class Scheduler:
 
     async def rabbit_connect(self):
         self.connection = await aio_pika.connect_robust(  # noQA
-            settings.RABBIT_ADDRESS,  # , loop=loop
-            port=5673,
+            settings.RABBIT_ADDRESS,
         )
         self.channel = await self.connection.channel()  # noQA
         self.queue = await self.channel.declare_queue(settings.RABBIT_READING_QUEUE)  # noQA
@@ -47,7 +46,11 @@ class Scheduler:
             print(vks)
             for vk in vks:
                 dto_vk = DTO.Vk(link=vk)
-                token = await DAO.get_token_for_vk(DTO.Vk(link=vk))
+                try:
+                    token = await DAO.get_token_for_vk(DTO.Vk(link=vk))
+                except Exception:  # noQA
+                    print(f'no token for vk {dto_vk.link}')
+                    continue
                 # raw_posts = []
                 async with httpx.AsyncClient() as client:
                     response = await client.get(
@@ -56,7 +59,7 @@ class Scheduler:
                                             ('access_token', token),
                                             ('domain', vk),
                                             ('offset', '0'),
-                                            ('count', '2'),
+                                            ('count', '10'),
                                             ('v', '5.95'),
                                         ],
                                         headers={
@@ -84,9 +87,9 @@ class Scheduler:
 
                     r.text = self.preprocess_text(r.text)
                     post_id = int(str(post['id']) + str(post['from_id'])[1:])
-                    # TODO: добавить проверку наличия данного поста в базе
                     dto_post = DTO.Post(post_id=post_id, raw_post=r.dict(), post_time=post['date'], vk_group=dto_vk)
-                    await DAO.create_post(dto_post, dto_vk)
+                    if not await DAO.check_post_exist(dto_post):
+                        await DAO.create_post(dto_post, dto_vk)
                 await DAO.refresh_vk_last_seen(dto_vk)
 
     def get_biggest_size(self, sizes: List) -> str:  # noQA
@@ -116,11 +119,6 @@ async def app_startup():
     await runner.message_waiting()
 
 
-# @app.on_event('shutdown')
-# async def app_shutdown():
-#     runner.stopped = True
-
-
-# @app.get("/")
-# async def read_items():
-#     return {'hi': 'its ok!', 'value': runner.value}
+@app.get('/test')
+async def delete_all_posts():
+    return {'ok': True}
